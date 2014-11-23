@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<!-- saved from url=(0014)about:internet -->
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+<meta http-equiv="x-ua-compatible" content="IE=9" >
+
+<title>Practical Machine Learning Week 3 - Prediction Assignment</title>
+
+<style type="text/css">
+body, td {
+   font-family: sans-serif;
+   background-color: white;
+   font-size: 12px;
+   margin: 8px;
+}
+
+tt, code, pre {
+   font-family: 'DejaVu Sans Mono', 'Droid Sans Mono', 'Lucida Console', Consolas, Monaco, monospace;
+}
+
+h1 { 
+   font-size:2.2em; 
+}
+
+h2 { 
+   font-size:1.8em; 
+}
+
+h3 { 
+   font-size:1.4em; 
+}
+
+h4 { 
+   font-size:1.0em; 
+}
+
+h5 { 
+   font-size:0.9em; 
+}
+
+h6 { 
+   font-size:0.8em; 
+}
+
+a:visited {
+   color: rgb(50%, 0%, 50%);
+}
+
+pre {	
+   margin-top: 0;
+   max-width: 95%;
+   border: 1px solid #ccc;
+   white-space: pre-wrap;
+}
+
+pre code {
+   display: block; padding: 0.5em;
+}
+
+code.r, code.cpp {
+   background-color: #F8F8F8;
+}
+
+table, td, th {
+  border: none;
+}
+
+blockquote {
+   color:#666666;
+   margin:0;
+   padding-left: 1em;
+   border-left: 0.5em #EEE solid;
+}
+
+hr {
+   height: 0px;
+   border-bottom: none;
+   border-top-width: thin;
+   border-top-style: dotted;
+   border-top-color: #999999;
+}
+
+@media print {
+   * { 
+      background: transparent !important; 
+      color: black !important; 
+      filter:none !important; 
+      -ms-filter: none !important; 
+   }
+
+   body { 
+      font-size:12pt; 
+      max-width:100%; 
+   }
+       
+   a, a:visited { 
+      text-decoration: underline; 
+   }
+
+   hr { 
+      visibility: hidden;
+      page-break-before: always;
+   }
+
+   pre, blockquote { 
+      padding-right: 1em; 
+      page-break-inside: avoid; 
+   }
+
+   tr, img { 
+      page-break-inside: avoid; 
+   }
+
+   img { 
+      max-width: 100% !important; 
+   }
+
+   @page :left { 
+      margin: 15mm 20mm 15mm 10mm; 
+   }
+     
+   @page :right { 
+      margin: 15mm 10mm 15mm 20mm; 
+   }
+
+   p, h2, h3 { 
+      orphans: 3; widows: 3; 
+   }
+
+   h2, h3 { 
+      page-break-after: avoid; 
+   }
+}
+
+</style>
+
+
+
+
+
+</head>
+
+<body>
+<h1>Practical Machine Learning Week 3 - Prediction Assignment</h1>
+
+<p>##Libraries
+randomForest is used as a ML algorithm for this project.See following link for more details:
+<a href="http://cran.r-project.org/web/packages/randomForest/randomForest.pdf">http://cran.r-project.org/web/packages/randomForest/randomForest.pdf</a>
+doParallel library is used to for parallel processing and hence speeding up the analysis.
+check following link for more details: <a href="http://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf">http://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf</a></p>
+
+<pre><code>library(Hmisc)
+library(caret)
+library(randomForest)
+library(foreach)
+library(doParallel)
+set.seed(998)
+</code></pre>
+
+<h2>Loading Training Data</h2>
+
+<p>The pml-training.csv data is actually used to devise training and testing sets.
+The pml-test.csv data is used to predict and answer the 20 questions based on the trained model.</p>
+
+<pre><code>training.file   &lt;- &#39;pml-training.csv&#39;
+test.cases.file &lt;- &#39;pml-test.csv&#39;
+training.url    &lt;- &#39;http://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv&#39;
+test.cases.url  &lt;- &#39;http://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv&#39;
+
+download.file(training.url, training.file)
+download.file(test.cases.url,test.cases.file )
+</code></pre>
+
+<h2>Cleaning Data</h2>
+
+<p>First all blank(&#39;&ldquo;&rdquo;&#39;), &#39;#DIV/0&#39; and &#39;NA&#39; values are converted to &#39;NA&#39;.
+Any Columns containing &#39;NA&#39; are removed from both downloaded data sets.</p>
+
+<pre><code>training.df   &lt;-read.csv(training.file, na.strings=c(&quot;NA&quot;,&quot;#DIV/0!&quot;, &quot;&quot;))
+test.cases.df &lt;-read.csv(test.cases.file , na.strings=c(&quot;NA&quot;, &quot;#DIV/0!&quot;, &quot;&quot;))
+training.df&lt;-training.df[,colSums(is.na(training.df)) == 0]
+test.cases.df &lt;-test.cases.df[,colSums(is.na(test.cases.df)) == 0]
+</code></pre>
+
+<p>The features user_name raw_timestamp_part_1 raw_timestamp_part_2   cvtd_timestamp new_window num_window are not related
+to calculations and are removed form the downloaded data.</p>
+
+<pre><code>training.df   &lt;-training.df[,-c(1:7)]
+test.cases.df &lt;-test.cases.df[,-c(1:7)]
+</code></pre>
+
+<p>##Create a stratified random sample of the data into training and test sets.seed(998)</p>
+
+<pre><code>inTraining.matrix    &lt;- createDataPartition(training.df$classe, p = 0.75, list = FALSE)
+training.data.df &lt;- training.df[inTraining.matrix, ]
+testing.data.df  &lt;- training.df[-inTraining.matrix, ]
+</code></pre>
+
+<h2>Use Random Forests</h2>
+
+<p>The outcome variable is &#39;classe&#39;
+All variables other variables that assist in determining classe are defined as &#39;variables&#39;.
+The outcome variable is &#39;classe&#39;are &ldquo;fit&#39; </p>
+
+<pre><code>registerDoParallel()
+classe &lt;- training.data.df$classe
+variables &lt;- training.data.df[-ncol(training.data.df)]
+</code></pre>
+
+<p>In the case of forest size we usemodel  1000 trees.  We have four cores so we  split up the problem into four pieces.
+This is accomplished by executing the randomForest function four times, with the ntree argument set to 250.[Using The foreach Package
+Steve Weston, <a href="mailto:doc@revolutionanalytics.com">doc@revolutionanalytics.com</a>, April 10, 2014],[Package randomForest July 17, 2014
+Title Breiman and Cutler&#39;s random forests for classification and regression Version 4.6-10 Date 2014-07-17]</p>
+
+<pre><code>rf &lt;- foreach(ntree=rep(250, 4), .combine=randomForest::combine, .packages=&#39;randomForest&#39;) %dopar% {
+randomForest(variables, classe, ntree=ntree) 
+}
+</code></pre>
+
+<p>##Confusion Matrix for Training
+Predict and generate the Accuracy and confusion matrix for the training set (75% of the training data)</p>
+
+<pre><code>training.predictions &lt;- predict(rf, newdata=training.data.df)
+confusionMatrix(training.predictions,training.data.df$classe)
+</code></pre>
+
+<p>##Confusion Matrix for Test set
+Predict and generate the Accuracy and confusion matrix for the training set (25% of the testing data)
+Did the data overfit the training data?</p>
+
+<pre><code>testing.predictions &lt;- predict(rf, newdata=testing.data.df)
+confusionMatrix(testing.predictions,testing.data.df$classe)
+</code></pre>
+
+<p>##Coursera provided code for submission</p>
+
+<p>Set these <code>R</code> values from previous code that cleans data to match submission code.</p>
+
+<pre><code>feature_set &lt;- colnames(training.df)
+newdata     &lt;- test.cases.df
+</code></pre>
+
+<p>Method to write answers to separate <code>.txt</code> files</p>
+
+<pre><code>pml_write_files = function(x){
+  n = length(x)
+  for(i in 1:n){
+    filename = paste0(&quot;problem_id_&quot;,i,&quot;.txt&quot;)
+    write.table(x[i],file=filename,quote=FALSE,row.names=FALSE,col.names=FALSE)
+  }
+}
+</code></pre>
+
+<p>Predict the <code>answers</code> to the 20 questions.</p>
+
+<pre><code>x &lt;- evaluation_data
+x &lt;- x[feature_set[feature_set!=&#39;classe&#39;]]
+answers &lt;- predict(rf, newdata=x)
+</code></pre>
+
+<p>Now check</p>
+
+<pre><code>answers
+</code></pre>
+
+<p>Now write files and go to submission at coursera</p>
+
+<pre><code>pml_write_files(answers)
+</code></pre>
+
+</body>
+
+</html>
+
