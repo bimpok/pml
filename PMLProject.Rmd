@@ -1,4 +1,4 @@
-# Proactical Machine Learning Prediction Assignment
+# Practical Machine Learning Week 3 - Prediction Assignment
 
 ##Libraries
 randomForest is used as a ML algorithm for this project.See following link for more details:
