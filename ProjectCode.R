@@ -1,5 +1,3 @@
-##https://github.com/crigano/Practical-Machine-Learning-Course-Project-Submission/blob/master/Project.Rmd
-
 library(Hmisc)
 library(caret)
 library(randomForest)
