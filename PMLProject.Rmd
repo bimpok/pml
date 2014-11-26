@@ -61,9 +61,8 @@ variables <- training.data.df[-ncol(training.data.df)]
 ```
 
 In the case of forest size we usemodel  1000 trees.  We have four cores so we  split up the problem into four pieces.
-This is accomplished by executing the randomForest function four times, with the ntree argument set to 250.[Using The foreach Package
-Steve Weston, doc@revolutionanalytics.com, April 10, 2014],[Package ‘randomForest’ July 17, 2014
-Title Breiman and Cutler's random forests for classification and regression Version 4.6-10 Date 2014-07-17]
+This is accomplished by executing the randomForest function four times, with the ntree argument set to 250, using The foreach Package
+and Package ‘randomForest’.
 ```
 rf <- foreach(ntree=rep(250, 4), .combine=randomForest::combine, .packages='randomForest') %dopar% {
 randomForest(variables, classe, ntree=ntree) 
