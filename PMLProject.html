@@ -145,10 +145,10 @@ hr {
 <h1>Practical Machine Learning Week 3 - Prediction Assignment</h1>
 
 <p>##Libraries
-randomForest is used as a ML algorithm for this project.See following link for more details:
+randomForest is used as a ML algorithm for this project. doParallel library is used to for parallel processing and hence speeding up the analysis.
+See following link for more details about randomForest and doParallel:
 <a href="http://cran.r-project.org/web/packages/randomForest/randomForest.pdf">http://cran.r-project.org/web/packages/randomForest/randomForest.pdf</a>
-doParallel library is used to for parallel processing and hence speeding up the analysis.
-check following link for more details: <a href="http://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf">http://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf</a></p>
+<a href="http://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf">http://cran.r-project.org/web/packages/doParallel/vignettes/gettingstartedParallel.pdf</a></p>
 
 <pre><code>library(Hmisc)
 library(caret)
@@ -160,8 +160,8 @@ set.seed(998)
 
 <h2>Loading Training Data</h2>
 
-<p>The pml-training.csv data is actually used to devise training and testing sets.
-The pml-test.csv data is used to predict and answer the 20 questions based on the trained model.</p>
+<p>The pml-training.csv data is downloaded from the given link. We created training and testing sets using this data set.
+The pml-test.csv data is then used to predict and answer the 20 questions based on the trained model.</p>
 
 <pre><code>training.file   &lt;- &#39;pml-training.csv&#39;
 test.cases.file &lt;- &#39;pml-test.csv&#39;
@@ -183,8 +183,7 @@ training.df&lt;-training.df[,colSums(is.na(training.df)) == 0]
 test.cases.df &lt;-test.cases.df[,colSums(is.na(test.cases.df)) == 0]
 </code></pre>
 
-<p>The features user_name raw_timestamp_part_1 raw_timestamp_part_2   cvtd_timestamp new_window num_window are not related
-to calculations and are removed form the downloaded data.</p>
+<p>Unrelated features &ndash; user_name,raw_timestamp_part_1,raw_timestamp_part_2,cvtd_timestamp,new_window,num_window were removed.</p>
 
 <pre><code>training.df   &lt;-training.df[,-c(1:7)]
 test.cases.df &lt;-test.cases.df[,-c(1:7)]
@@ -200,17 +199,16 @@ testing.data.df  &lt;- training.df[-inTraining.matrix, ]
 <h2>Use Random Forests</h2>
 
 <p>The outcome variable is &#39;classe&#39;
-All variables other variables that assist in determining classe are defined as &#39;variables&#39;.
-The outcome variable is &#39;classe&#39;are &ldquo;fit&#39; </p>
+All other variables that assist in determining classe are defined as &#39;variables&#39;.</p>
 
 <pre><code>registerDoParallel()
 classe &lt;- training.data.df$classe
 variables &lt;- training.data.df[-ncol(training.data.df)]
 </code></pre>
 
-<p>In the case of forest size we usemodel 1000 trees. We have four cores so we split up the problem into four pieces. 
+<p>In the case of forest size we use to model is 1000 trees.  We split up the problem into four pieces since we have 4 cores.
 This is accomplished by executing the randomForest function four times, with the ntree argument set to 250, using The foreach Package
-and Package ‘randomForest’.</p>
+and Package &#39;randomForest&#39;.</p>
 
 <pre><code>rf &lt;- foreach(ntree=rep(250, 4), .combine=randomForest::combine, .packages=&#39;randomForest&#39;) %dopar% {
 randomForest(variables, classe, ntree=ntree) 
