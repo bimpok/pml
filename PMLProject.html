@@ -208,10 +208,9 @@ classe &lt;- training.data.df$classe
 variables &lt;- training.data.df[-ncol(training.data.df)]
 </code></pre>
 
-<p>In the case of forest size we usemodel  1000 trees.  We have four cores so we  split up the problem into four pieces.
-This is accomplished by executing the randomForest function four times, with the ntree argument set to 250.[Using The foreach Package
-Steve Weston, <a href="mailto:doc@revolutionanalytics.com">doc@revolutionanalytics.com</a>, April 10, 2014],[Package randomForest July 17, 2014
-Title Breiman and Cutler&#39;s random forests for classification and regression Version 4.6-10 Date 2014-07-17]</p>
+<p>In the case of forest size we usemodel 1000 trees. We have four cores so we split up the problem into four pieces. 
+This is accomplished by executing the randomForest function four times, with the ntree argument set to 250, using The foreach Package
+and Package ‘randomForest’.</p>
 
 <pre><code>rf &lt;- foreach(ntree=rep(250, 4), .combine=randomForest::combine, .packages=&#39;randomForest&#39;) %dopar% {
 randomForest(variables, classe, ntree=ntree) 
